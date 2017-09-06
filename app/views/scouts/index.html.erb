@@ -1,0 +1,20 @@
+<ul>
+<% @scouts.each do |scout| %>
+	<li><strong><%= scout.name %></strong> <%= scout.rank.name %>
+		<ul><li>
+			<%= scout.merit_badges.map(&:name).join(", ") %>
+		</li></ul>
+		<%= link_to "Edit", edit_scout_path(scout) %> |
+		<%= link_to "Keypress Game!", match_index_path(scout_id: scout.id) %>
+	</li>
+<% end %>
+</ul>
+
+<hr>
+
+<%= form_for @scout do |f| %>
+	<%= f.text_field :name %>
+	<%= f.collection_select :rank_id, Rank.all, :id, :name %><br>
+	<%= f.collection_check_boxes :merit_badge_ids, MeritBadge.all, :id, :name %><br>
+	<%= f.submit %>
+<% end %>

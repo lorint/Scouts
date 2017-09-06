@@ -1,0 +1,92 @@
+<style>
+	@namespace svg 'http://www.w3.org/2000/svg';
+	body {font-family: Helvetica;}
+	.done {border: 3px solid green;}
+	.blue {border: 3px solid #8080FF;}
+	svg|line {stroke-width: 2px;
+		stroke: black;}
+	#grid {width: <%= @size * 20 %>px; height: <%= @size * 20 %>px;}
+</style>
+
+<script>
+// So as to not pollute the global scope, we put all of this inside a closure
+(function () {
+	var dist;
+	var grid;
+	var elapsed;
+	var doneBox;
+	// Quick test to make sure TurboLinks doesn't get confused
+	if (!App.salesperson || App.salesperson.consumer.connection.disconnected) {
+		// Kinda unique way to subscribe since it also passes in extra inforation -- size
+		App.salesperson = App.cable.subscriptions.create({channel: "SalespersonChannel", size: <%= @size %>}, {
+			connected: function() {},
+			disconnected: function() {},
+
+			// Called when there's incoming data on the websocket for this channel
+			received: function(data) {
+				dist.innerHTML = data.distance;
+
+				// Show final things if we're done
+				dist.className = data.is_done ? "done" : "";
+				grid.setAttribute("class", data.is_done ? "done" : "blue");
+				doneBox.style.visibility = data.is_done ? "visible" : "hidden";
+				elapsed.innerHTML = data.is_done ? (data.total_time + " seconds") : "";
+
+				// Clear out all lines in the SVG
+				grid.innerHTML = "";
+				// Draw all lines
+				var lastX, lastY;
+				for (var i = 0; i < data.points.length; ++i) {
+					var x = (data.points[i][0] * 20) + 10;
+					var y = (data.points[i][1] * 20) + 10;
+					if (i > 0) {
+						// This programmatically makes something like:
+						// <line x1="110" y1="110" x2="90" y2="70"></line>
+						var line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+						line.setAttribute("x1", lastX);
+						line.setAttribute("y1", lastY);
+						line.setAttribute("x2", x);
+						line.setAttribute("y2", y);
+						// If the distance between is 2 units or more then make it gray
+						var lineDistance = Math.sqrt((lastX - x) ** 2 + (lastY - y) ** 2);
+						// Lines 2 units or longer turn gray
+						if (lineDistance > 39.9)
+							line.setAttribute("style", "stroke: #CCC;");
+						grid.appendChild(line);
+					}
+					lastX = x;
+					lastY = y;
+				}
+			}
+		});
+	}
+	window.addEventListener("load", function () {
+		dist = document.getElementById("distance");
+		// Not possible to simply do a getElementById since SVGs
+		// have an XML namespace on them.
+		grid = document.getElementsByTagNameNS("http://www.w3.org/2000/svg", "svg")[0];
+		elapsed = document.getElementById("elapsed");
+		doneBox = document.getElementById("doneBox");
+
+		document.getElementById("btnAgain").addEventListener("click", function () {
+			App.salesperson.perform("again");
+			doneBox.style.visibility = "hidden";
+		});
+	});
+}) ()
+
+// ^ The parenthesis here runs the code in the closure right away, and as
+// closures are just functions, all defined variables end up inside this
+// functional scope.
+</script>
+<h2>Travelling Salesperson</h2>
+
+Distance: <span id="distance"></span><br>
+
+<svg id="grid" xmlns="http://www.w3.org/2000/svg">
+</svg>
+
+<div id="doneBox">
+	<span id="elapsed"></span>
+	<input type="button" id="btnAgain" value="Again!">
+</div>

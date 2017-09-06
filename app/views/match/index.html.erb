@@ -1,0 +1,50 @@
+You are <%= @scout.name %>
+<hr>
+
+<div id="scouts">
+<% @keypresses.each do |k, v| %>
+	<%= @scout_names[k] %>: 
+	<span id="scout<%= k %>"><%= v %></span>
+<% end %>
+</div>
+
+<input type="button" id="trigger" value="kick it!">
+
+<script>
+	App.match = App.cable.subscriptions.create("MatchChannel", {
+		// Called when the subscription is ready for use on the server
+	  connected: function() {},
+
+		// Called when the subscription has been terminated by the server
+	  disconnected: function() {},
+
+		// Called when there's incoming data on the websocket for this channel
+	  received: function(data) {
+	    var scouts = document.getElementById("scouts");
+	    if (scouts != null) {
+
+	      for (var prop in data) {
+	        console.log(prop, data[prop]);
+	        var scout = document.getElementById(prop);
+	        if (scout != null) {
+	          scout.innerHTML = data[prop];
+	        }
+	        else {
+	          scouts.innerHTML += scoutNames[prop] +
+	            ': <span id="' + prop + '">' + data[prop] + '</span><br>';
+	        }
+	      }
+	    }
+	  },
+
+	  keypress: function() {
+	    return this.perform('keypress');
+	  }
+	});
+
+	var scoutNames = <%= @scout_names.to_json.html_safe %>;
+	var trigger = document.getElementById("trigger");
+	trigger.addEventListener("click", function () {
+		App.match.perform("keypress", {scout_id: <%= @scout.id %>});
+	});
+</script>

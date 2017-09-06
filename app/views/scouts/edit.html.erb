@@ -1,0 +1,8 @@
+<%= form_for @scout do |f| %>
+	<%= f.text_field :name %>
+	<%= f.fields_for :scout_merit_badges do |builder| %>
+		<%= builder.object.merit_badge.name %>:
+		<%= builder.text_field :counselor %><br>
+	<% end %>
+	<%= f.submit %>
+<% end %>
